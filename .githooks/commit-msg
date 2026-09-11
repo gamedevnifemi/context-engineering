@@ -1,0 +1,5 @@
+#!/bin/sh
+# Apply the same privacy scan to the commit message itself.
+root="$(git rev-parse --show-toplevel)"
+if command -v python >/dev/null 2>&1; then py=python; else py=python3; fi
+exec "$py" "$root/scripts/privacy_check.py" --message "$1"

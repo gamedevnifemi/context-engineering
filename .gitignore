@@ -1,0 +1,25 @@
+# Generated analysis output. Reports use pseudonyms, but the directory may also hold caches
+# and scratch files, so nothing under it is tracked.
+out/
+
+# Raw transcripts are read in place from Claude Code's own directory and are never copied here.
+*.jsonl
+
+# Local configuration (pseudonym salt, privacy denylist) lives outside the repo, but guard anyway.
+.ctxeng/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
