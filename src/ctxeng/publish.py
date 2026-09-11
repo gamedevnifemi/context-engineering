@@ -222,13 +222,30 @@ def render_publish_charts(sessions: list[Session], prompts: list[dict], out_dir:
         plt.close(fig)
         made.append(p)
 
-    rows, pooled = aggregate_composition(sessions, top=6)
-    if rows:
-        rows = rows[:10]
-        fig, ax = plt.subplots(figsize=(7, 3.8))
-        ax.barh([r["source"] for r in rows][::-1], [r["median_session_pct"] for r in rows][::-1])
-        ax.set_xlabel("median share of characters that entered the context (%)")
-        ax.set_title(f"What filled the context, typical of the {pooled} largest sessions")
+    # One stacked bar per large session, numbered by size and labelled by model. Shares of tool
+    # types per session say nothing about who ran them, and the spread between sessions is the
+    # point of the picture.
+    largest = sorted(sessions, key=lambda s: len(s.api_calls), reverse=True)[:6]
+    if largest:
+        comps = [published_composition(s) for s in largest]
+        names = [f"{i} ({metrics.dominant(s.models)})" for i, s in enumerate(largest, start=1)]
+        top_sources: list[str] = []
+        for comp in comps:
+            for r in comp[:6]:
+                if r["source"] not in top_sources:
+                    top_sources.append(r["source"])
+        fig, ax = plt.subplots(figsize=(8, 3.8))
+        bottoms = [0.0] * len(largest)
+        for src in top_sources:
+            vals = [next((r["share"] * 100 for r in comp if r["source"] == src), 0.0) for comp in comps]
+            ax.bar(names, vals, bottom=bottoms, label=src)
+            bottoms = [b + v for b, v in zip(bottoms, vals)]
+        ax.bar(names, [100 - b for b in bottoms], bottom=bottoms, color="lightgrey", label="other")
+        ax.set_ylabel("% of characters")
+        ax.set_xlabel("largest sessions, by number of API calls")
+        ax.set_title("What filled the context")
+        ax.legend(fontsize=7, loc="upper left", bbox_to_anchor=(1, 1))
+        plt.setp(ax.get_xticklabels(), rotation=20, ha="right", fontsize=8)
         fig.tight_layout()
         p = out_dir / "composition.png"
         fig.savefig(p, dpi=130)

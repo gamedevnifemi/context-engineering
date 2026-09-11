@@ -114,9 +114,12 @@ dominated by one very large session.
 
 ![What filled the context](img/2026-09-11-composition.png)
 
+The six sessions are numbered by size and labelled by model. The spread between them is the
+point: no two sessions are filled the same way.
+
 - The model's own tool inputs are the largest source in a typical long session: file content
   going out through Write and Edit, and commands going out through Bash.
-- Tool results come next, and which tool dominates varies wildly. One session was 90% Read
+- Tool results come next, and which tool dominates varies wildly. Session 4 was 90% Read
   results, which is why the pooled column looks so different from the typical one.
 - What the person typed is 2% of a typical session. Compaction summaries are 1%.
 - Injected context is not free. Listings and reminders together are about 15% of a typical

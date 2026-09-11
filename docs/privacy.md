@@ -51,7 +51,9 @@ Two reports exist. The default one keeps per-session detail for local analysis a
   carries a name.
 - Groups backed by fewer than three sessions are omitted, since they are single-session rows in
   disguise.
-- Charts show at most two illustrative sessions, labelled by model alone, plus pooled figures.
+- Charts label sessions by rank and model, never by identifier, and show per-session detail only
+  where it says something about the phenomenon rather than the person: the split of a session's
+  context by source qualifies, a session's prompt count and calendar position do not.
 - Tool names from external integrations are collapsed to a single label, since they reveal what
   is installed on the machine.
 - Corpus descriptions in prose use approximate counts. Exact figures belong to the metrics, not
