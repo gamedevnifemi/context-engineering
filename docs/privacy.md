@@ -1,84 +1,51 @@
 # Privacy
 
-## Why this exists
+A Claude Code transcript is a complete record of a working session, and this public repository's
+tooling runs against exactly those files. Nothing derived from a transcript may identify the
+person or machine it came from, and the safeguards have to keep working after a context
+compaction, when the session working in the repo has forgotten how they were set up.
 
-A Claude Code transcript is a complete record of a working session: every prompt, every file the
-model read or wrote, every command output, and summaries that restate all of it in prose. This
-repository is public and its tooling runs against exactly those files. The goal is that nothing
-derived from a transcript can identify the person or machine it came from, and that the
-safeguards keep working when the person, or the assistant session, working in the repo has
-forgotten how they were set up.
+## What is enforced
 
-The safeguards do not rely on secrecy. The code is public; what stays private is the data and
-the local configuration.
-
-## Layers
-
-1. **Read in place.** Transcripts are never copied into the repository. Transcript files, the
-   generated `out/` directory and local configuration are ignored by git and refused by the
-   checks if staged anyway.
-2. **Pseudonyms by default.** Every project and session identifier passes through
-   `ctxeng.redact` before it is printed or written. An alias is a salted hash prefix. The salt is
-   128 random bits created on first use, stored under `~/.ctxeng/` (or `CTXENG_HOME`), and never
-   leaves the machine, so aliases are stable locally and cannot be reversed from a published
-   report. `--raw` shows real identifiers for local work only.
-3. **Content checks in git hooks.** `scripts/privacy_check.py` runs on every commit through the
-   hooks in `.githooks/`: staged content before the commit, the message after it is written. The
-   built-in checks cover contact details, home-directory paths on any operating system, Claude
-   Code project folder names that embed a username, common credential formats, and file types
-   that cannot be scanned. Text is normalised first so look-alike and invisible characters cannot
-   hide a match.
-4. **Local terms.** Anything specific to the maintainer that the built-in checks would not
-   recognise is listed in a local file, `~/.ctxeng/terms.txt` (or `CTXENG_TERMS_FILE`), and can
-   also be supplied through the `CTXENG_TERMS` environment variable. One entry per line, `#` for
-   comments, matched case-insensitively on word boundaries. The file is never committed and its
-   contents are never written into repository files, including documentation.
-5. **Continuous check.** A GitHub Actions workflow runs the same checks over the whole tree on
-   every push and pull request, without printing matched text. It catches a clone where the hooks
-   were never enabled. Adding the local terms as a repository secret named `CTXENG_TERMS` extends
-   it beyond the built-in checks; that is optional and a decision for the repository owner.
-6. **Standing rules.** `CLAUDE.md` restates the rules so that any assistant session, including one
-   that has just compacted, re-reads them before touching git.
-7. **Commit identity.** Commits use a GitHub no-reply address, configured for this repository only.
-
-## What published output leaves out
-
-Two reports exist. The default one keeps per-session detail for local analysis and stays in
-`out/`. `ctxeng report --publish` produces the only kind of table that goes into `docs/`:
-
-- Aggregates and ranges only: no per-session or per-event rows, no session identifiers, even
-  pseudonymous ones. A row of per-session figures is a behavioural fingerprint whether or not it
-  carries a name.
-- Groups backed by fewer than three sessions are omitted, since they are single-session rows in
-  disguise.
-- Charts label sessions by rank and model, never by identifier, and show per-session detail only
-  where it says something about the phenomenon rather than the person: the split of a session's
-  context by source qualifies, a session's prompt count and calendar position do not.
-- Tool names from external integrations are collapsed to a single label, since they reveal what
-  is installed on the machine.
-- Corpus descriptions in prose use approximate counts. Exact figures belong to the metrics, not
-  to the person's usage volume.
-- Anything that reads like a path, a name, or a project. Generation is not review: read every
-  table and chart before committing it.
+- **Transcripts are read in place.** They are never copied into the repository, and the
+  generated `out/` directory is not tracked.
+- **Identifiers are pseudonyms.** Every project and session identifier passes through
+  `ctxeng.redact` before it is printed or written. An alias is a salted hash prefix; the salt is
+  created on first use under `~/.ctxeng/` (or `CTXENG_HOME`) and never leaves the machine.
+  `--raw` shows real identifiers for local work.
+- **Content checks run on every commit and in CI.** `scripts/privacy_check.py` scans staged
+  content and the commit message through the hooks in `.githooks/`, and a GitHub Actions
+  workflow runs it over the whole tree on every push without printing matched text. It uses the
+  same patterns `ctxeng.redact` uses to scrub output, plus a local terms file
+  (`~/.ctxeng/terms.txt`, or `CTXENG_TERMS_FILE`, or the `CTXENG_TERMS` environment variable;
+  one entry per line, `#` for comments). The terms file is never committed and its contents are
+  never written into repository files. Adding the terms as a repository secret named
+  `CTXENG_TERMS` extends the CI check; that is optional.
+- **Published findings are aggregate-only.** `ctxeng report --publish` produces distributions and
+  ranges, no per-session or per-event rows and no session identifiers; groups backed by fewer than
+  three sessions are omitted; integration-specific tool names are collapsed to one label; charts
+  label sessions by rank and model. Corpus descriptions in prose use approximate counts. The
+  detailed report stays in `out/`.
+- **Commits use a GitHub no-reply address**, configured for this repository only.
+- **`CLAUDE.md` restates the rules** so that any session, including one that has just compacted,
+  re-reads them before touching git.
 
 ## Setup on a new machine
 
 ```bash
 git config core.hooksPath .githooks
 mkdir -p ~/.ctxeng && printf '# one term per line\n' > ~/.ctxeng/terms.txt   # then add your own
-python scripts/privacy_check.py .                                            # scan the tree
+python scripts/privacy_check.py .
 ```
 
 ## Limits
 
-The checks read text as it will be committed. They cannot see inside images, which are accepted
-and listed for manual review, or inside strings that only exist at run time, which is how the
-unit tests exercise the patterns without tripping the checks on their own source. Formats that
-cannot be read as text at all are refused. None of this replaces reading what is about to be
-published.
+The checks read text. Images and other binaries are not scanned and are reviewed by eye before
+they are committed. Strings that only exist at run time are invisible to the checks, which is how
+the unit tests exercise the patterns without tripping them on their own source. Generation is not
+review: read every table and chart before publishing it.
 
 ## When a check fails
 
-Fix the content. Replace a real path with `~/...` or `C:\Users\<you>\...`, replace an address
-with an `example.com` one, or remove the reference. Do not weaken the checks and do not bypass
-the hooks.
+Fix the content: use a placeholder such as `~/...` or `C:\Users\<you>\...`, an `example.com`
+address, or remove the reference. Do not weaken the checks and do not bypass the hooks.

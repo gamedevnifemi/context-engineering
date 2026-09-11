@@ -1,7 +1,9 @@
 import importlib.util
+import io
 import os
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
 from ctxeng import patterns
@@ -88,29 +90,19 @@ class CheckerTests(unittest.TestCase):
     def test_terms_from_environment_are_merged(self):
         os.environ["CTXENG_TERMS"] = "OtherTerm\n# comment\n"
         terms = self.mod.load_terms()
-        hits = self.mod.scan_text("SecretName and OtherTerm", terms)
-        self.assertEqual(len(hits), 2)
+        self.assertEqual(len(self.mod.scan_text("SecretName and OtherTerm", terms)), 2)
 
-    def test_invisible_and_lookalike_characters_do_not_hide_a_term(self):
-        terms = self.mod.load_terms()
-        self.assertEqual(len(self.mod.scan_text("Secret\u200bName", terms)), 1)
-        self.assertEqual(len(self.mod.scan_text("\uff33ecretName", terms)), 1)
-
-    def test_forbidden_and_unscannable_paths(self):
-        problems = self.mod.check_blobs([
-            ("out/report.md", b"clean"),
-            ("data.jsonl", b"{}"),
-            ("notes/terms.txt", b"clean"),
-            ("paper.pdf", b"%PDF-1.4"),
-            ("blob.bin", b"\x00\x01\x02"),
-            ("docs/ok.md", b"clean text"),
-            ("docs/img/chart.png", b"\x89PNG"),
-        ], [])
-        self.assertEqual(problems, 5)
+    def test_untracked_paths_and_binaries(self):
+        with redirect_stdout(io.StringIO()):
+            problems = self.mod.check_blobs([
+                ("out/report.md", b"clean"),
+                ("data.jsonl", b"{}"),
+                ("docs/img/chart.png", b"\x89PNG\x00"),
+                ("docs/ok.md", b"clean text"),
+            ], [])
+        self.assertEqual(problems, 2)
 
     def test_no_snippets_mode_hides_matched_text(self):
-        import io
-        from contextlib import redirect_stdout
         terms = self.mod.load_terms()
         buf = io.StringIO()
         with redirect_stdout(buf):

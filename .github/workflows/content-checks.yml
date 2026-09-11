@@ -14,9 +14,7 @@ jobs:
           python-version: "3.12"
       - name: Content checks
         env:
-          # Optional. A repository secret holding extra terms, one per line. Not available to
-          # workflows triggered from forks, in which case the built-in checks still run.
-          CTXENG_TERMS: ${{ secrets.CTXENG_TERMS }}
+          CTXENG_TERMS: ${{ secrets.CTXENG_TERMS }}  # optional
         run: python scripts/privacy_check.py --no-snippets .
       - name: Tests
         run: python -m unittest discover

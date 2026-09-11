@@ -1,8 +1,4 @@
-"""Patterns for things that identify a person or a machine.
-
-Shared by the pre-commit privacy scanner and by report redaction, so there is exactly one
-definition of what counts as personal.
-"""
+"""Patterns for fragments that identify a person or a machine, used to scrub output."""
 from __future__ import annotations
 
 import re
@@ -24,8 +20,7 @@ HOME_PATHS = (
     re.compile(r"/(?:home|Users)/([^/\s\"'`<>|]+)"),
 )
 
-# Claude Code names each project folder after the working directory, so the slug embeds the
-# username, e.g. ``C--Users-<name>-code-project``.
+# Claude Code project folder names are derived from the working directory path.
 PROJECT_SLUG = re.compile(r"(?i)\b[a-z]--users-([a-z0-9._~<>$%{}]+)-")
 
 # Values allowed in a username position because they are obviously placeholders.
