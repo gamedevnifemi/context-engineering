@@ -11,18 +11,18 @@ later, once the measurements say what to change.
 
 ## Privacy (non-negotiable)
 
-- Never commit anything that identifies the maintainer or their machine: real names, email
-  addresses, OS usernames, home-directory paths, account or entry IDs, or the names of other local
-  projects and repositories.
-- Raw transcripts (`*.jsonl`), the `out/` directory, and any unredacted derived data stay out of
-  git. The toolkit reads transcripts in place from Claude Code's own directory and never copies
-  them into this repo.
-- Anything published under `docs/` uses the pseudonymous project and session identifiers produced
-  by `ctxeng.redact`. Review every table and chart before committing it.
-- The `.githooks/` pre-commit and commit-msg hooks run `scripts/privacy_check.py`. Do not bypass
-  them. If the check blocks a commit, fix the content, not the check.
-- Personal terms the scanner should catch live in a denylist file outside the repository (see
-  `docs/privacy.md`). Never write such terms into files inside the repo, including this one.
+- Never commit anything that identifies the maintainer or their machine: names, contact details,
+  usernames, local paths, account identifiers, or the names of other local projects.
+- Transcripts (`*.jsonl`), the `out/` directory, and any unredacted derived data stay out of git.
+  The toolkit reads transcripts in place and never copies them into this repo.
+- Anything published under `docs/` uses the pseudonyms produced by `ctxeng.redact`, month-level
+  dates, and generic labels for integration-specific tool names. Review every table and chart
+  before committing it.
+- The `.githooks/` hooks run `scripts/privacy_check.py`. On a fresh clone, enable them with
+  `git config core.hooksPath .githooks` before the first commit. Do not bypass or weaken them; if
+  a check blocks a commit, fix the content.
+- The checks' local configuration lives outside the repository. Nothing from it is ever written
+  into repository files, including this one and the documentation.
 - Examples in docs and tests use invented paths, names, and identifiers.
 
 ## Commits
@@ -30,7 +30,9 @@ later, once the measurements say what to change.
 - Commit messages describe the change at a high level, in terms of the project's goals, for
   example "Add per-prompt context growth metric". No references to personal setup, other
   repositories, or specific sessions.
-- Inline comments follow the same register: explain intent, never personal circumstances.
+- Inline comments and script headers follow the same register: say what a thing is for, not what
+  it protects against or where local configuration lives. `docs/privacy.md` is the one place that
+  explains the checks.
 - The commit author for this repository is the GitHub no-reply address configured locally.
 
 ## Documentation
@@ -44,4 +46,4 @@ later, once the measurements say what to change.
 
 - Python, standard library only for the core package, so it runs anywhere Claude Code runs.
   Charts are an optional extra.
-- Run the tests (`python -m pytest` or `python -m unittest`) before committing.
+- Run the tests (`python -m unittest` or `python -m pytest`) before committing.

@@ -11,12 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def j(*parts: str) -> str:
-    """Join fragments at runtime.
-
-    The detection tests need real-looking personal fragments, but the repository's own privacy
-    scan reads this source file. Splitting the fragments keeps the scan clean while the tests
-    still exercise the complete patterns.
-    """
+    """Assemble a test input at runtime. See docs/privacy.md, "Limits"."""
     return "".join(parts)
 
 
@@ -72,21 +67,56 @@ class RedactTests(unittest.TestCase):
 
 
 class CheckerTests(unittest.TestCase):
-    def test_denylist_and_forbidden_paths(self):
-        mod = load_checker()
-        with tempfile.TemporaryDirectory() as tmp:
-            deny = Path(tmp) / "deny.txt"
-            deny.write_text("# personal\nSecretName\n", encoding="utf-8")
-            os.environ["CTXENG_DENYLIST"] = str(deny)
-            try:
-                denylist = mod.load_denylist()
-                hits = mod.scan_text("nothing here\nby SecretName today\nsecretnames plural", denylist)
-                self.assertEqual([(h[0], h[1]) for h in hits], [(2, "denylisted term")])
-                problems = mod.check_blobs([("out/report.md", b"clean"), ("data.jsonl", b"{}"),
-                                            ("docs/ok.md", b"clean text")], denylist)
-                self.assertEqual(problems, 2)
-            finally:
-                os.environ.pop("CTXENG_DENYLIST")
+    def setUp(self):
+        self.mod = load_checker()
+        self.tmp = tempfile.TemporaryDirectory()
+        path = Path(self.tmp.name) / "terms.txt"
+        path.write_text("# configured\nSecretName\n", encoding="utf-8")
+        os.environ["CTXENG_TERMS_FILE"] = str(path)
+        os.environ.pop("CTXENG_TERMS", None)
+
+    def tearDown(self):
+        os.environ.pop("CTXENG_TERMS_FILE", None)
+        os.environ.pop("CTXENG_TERMS", None)
+        self.tmp.cleanup()
+
+    def test_terms_match_on_word_boundaries(self):
+        terms = self.mod.load_terms()
+        hits = self.mod.scan_text("nothing here\nby SecretName today\nsecretnames plural", terms)
+        self.assertEqual([(h[0], h[1]) for h in hits], [(2, "configured term")])
+
+    def test_terms_from_environment_are_merged(self):
+        os.environ["CTXENG_TERMS"] = "OtherTerm\n# comment\n"
+        terms = self.mod.load_terms()
+        hits = self.mod.scan_text("SecretName and OtherTerm", terms)
+        self.assertEqual(len(hits), 2)
+
+    def test_invisible_and_lookalike_characters_do_not_hide_a_term(self):
+        terms = self.mod.load_terms()
+        self.assertEqual(len(self.mod.scan_text("Secret\u200bName", terms)), 1)
+        self.assertEqual(len(self.mod.scan_text("\uff33ecretName", terms)), 1)
+
+    def test_forbidden_and_unscannable_paths(self):
+        problems = self.mod.check_blobs([
+            ("out/report.md", b"clean"),
+            ("data.jsonl", b"{}"),
+            ("notes/terms.txt", b"clean"),
+            ("paper.pdf", b"%PDF-1.4"),
+            ("blob.bin", b"\x00\x01\x02"),
+            ("docs/ok.md", b"clean text"),
+            ("docs/img/chart.png", b"\x89PNG"),
+        ], [])
+        self.assertEqual(problems, 5)
+
+    def test_no_snippets_mode_hides_matched_text(self):
+        import io
+        from contextlib import redirect_stdout
+        terms = self.mod.load_terms()
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.mod.check_blobs([("a.md", b"mentions SecretName")], terms, snippets=False)
+        self.assertIn("configured term", buf.getvalue())
+        self.assertNotIn("SecretName", buf.getvalue())
 
 
 if __name__ == "__main__":

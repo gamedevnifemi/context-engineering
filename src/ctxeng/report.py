@@ -20,7 +20,28 @@ def _alias_row(row: dict) -> dict:
         out["project"] = project_alias(out["project"])
     if "session" in out:
         out["session"] = session_alias(out["session"])
+    if "date" in out:
+        out["month"] = (out["date"] or "")[:7]
     return out
+
+
+def _published_tool(name: str) -> str:
+    """Integration-specific tool names say what is installed on a machine; publish a generic label."""
+    return "MCP tools" if name.startswith("mcp__") else name
+
+
+def published_composition(s: Session) -> list[dict]:
+    """Composition with integration-specific tool names merged under one label."""
+    merged: dict[str, int] = {}
+    for r in metrics.composition(s):
+        source = r["source"]
+        if source.startswith("tool results: "):
+            source = "tool results: " + _published_tool(source[len("tool results: "):])
+        merged[source] = merged.get(source, 0) + r["chars"]
+    total = sum(merged.values()) or 1
+    rows = [{"source": k, "chars": v, "est_tokens": v // metrics.CHARS_PER_TOKEN, "share": v / total}
+            for k, v in merged.items()]
+    return sorted(rows, key=lambda r: r["chars"], reverse=True)
 
 
 def _fmt(v) -> str:
@@ -95,7 +116,7 @@ def build_report(sessions: list[Session], out_dir: Path, *, charts: bool = False
         f"How many user prompts it took to fill the {metrics.CONTEXT_LIMIT:,}-token window, for sessions "
         f"that filled at least half of it. `window_fills` counts compactions plus the current fill.",
         "",
-        md_table(fills, ["date", "session", "model", "effort", "version", "prompts", "compactions",
+        md_table(fills, ["month", "session", "model", "effort", "prompts", "compactions",
                          "window_fills", "prompts_per_fill"]),
         "## Context growth per prompt, by model",
         "",
@@ -139,7 +160,7 @@ def build_report(sessions: list[Session], out_dir: Path, *, charts: bool = False
     ]
     for s in largest[:3]:
         lines += [f"## What filled the context: {session_alias(s.session_id)}", "",
-                  md_table(_share_rows(metrics.composition(s)), ["source", "est_tokens", "share_pct"])]
+                  md_table(_share_rows(published_composition(s)), ["source", "est_tokens", "share_pct"])]
 
     if charts:
         made = render_charts(sessions, prompts, out_dir, top=top)
@@ -220,7 +241,7 @@ def render_charts(sessions: list[Session], prompts: list[dict], out_dir: Path, *
     if largest:
         fig, ax = plt.subplots(figsize=(8, 3.8))
         names = [session_alias(s.session_id) for s in largest]
-        comps = [metrics.composition(s) for s in largest]
+        comps = [published_composition(s) for s in largest]
         top_sources: list[str] = []
         for comp in comps:
             for r in comp[:6]:

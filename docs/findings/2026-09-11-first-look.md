@@ -5,8 +5,8 @@ Definitions are in [metrics.md](../metrics.md); caveats are at the end and matte
 
 ## The corpus
 
-- 278 main-session transcripts and 96 subagent transcripts, about 320 MB, from 23 June to
-  10 September 2026, across Claude Code releases 2.1.178 to 2.1.267.
+- 278 main-session transcripts and 96 subagent transcripts, about 320 MB, from June to
+  September 2026, across Claude Code releases 2.1.178 to 2.1.267.
 - Four models: Opus 4.8, Opus 5, Fable 5, Fable 5.1.
 - Most files are tiny, one to three calls driven by automation. Fifteen sessions have at least
   five API calls and hold nearly all the volume. Ten of those filled at least half a window.
@@ -16,20 +16,20 @@ Definitions are in [metrics.md](../metrics.md); caveats are at the end and matte
 
 ## 1. How many prompts fill the window
 
-Sessions that filled at least half of the one-million-token window, in date order.
+Sessions that filled at least half of the one-million-token window, in order of when they started.
 
-| date | session | model | effort | prompts | compactions | window fills | prompts per fill |
+| started | session | model | effort | prompts | compactions | window fills | prompts per fill |
 |---|---|---|---|---|---|---|---|
-| 2026-06-23 | session-b7e016 | Opus 5 | xhigh | 240 | 1 | 1.7 | 142 |
-| 2026-07-21 | session-46f857 | Fable 5 | max | 378 | 6 | 6.2 | 61 |
-| 2026-07-26 | session-b7ac56 | Opus 5 | xhigh | 118 | 1 | 1.3 | 89 |
-| 2026-08-06 | session-6a1ae1 | Fable 5 | xhigh | 129 | 1 | 1.4 | 90 |
-| 2026-08-13 | session-343cff | Opus 5 | max | 76 | 1 | 1.4 | 55 |
-| 2026-08-18 | session-0a3e86 | Fable 5 | max | 58 | 0 | 0.7 | 89 |
-| 2026-08-18 | session-8e300c | Fable 5 | max | 83 | 0 | 0.8 | 102 |
-| 2026-09-01 | session-6422bc | Fable 5.1 | max | 32 | 0 | 1.0 | 33 |
-| 2026-09-03 | session-ff0b8c | Fable 5.1 | xhigh | 31 | 1 | 1.1 | 29 |
-| 2026-09-03 | session-5abd4f | Fable 5.1 | max | 65 | 0 | 1.0 | 68 |
+| 2026-06 | session-b7e016 | Opus 5 | xhigh | 240 | 1 | 1.7 | 142 |
+| 2026-07 | session-46f857 | Fable 5 | max | 378 | 6 | 6.2 | 61 |
+| 2026-07 | session-b7ac56 | Opus 5 | xhigh | 118 | 1 | 1.3 | 89 |
+| 2026-08 | session-6a1ae1 | Fable 5 | xhigh | 129 | 1 | 1.4 | 90 |
+| 2026-08 | session-343cff | Opus 5 | max | 76 | 1 | 1.4 | 55 |
+| 2026-08 | session-0a3e86 | Fable 5 | max | 58 | 0 | 0.7 | 89 |
+| 2026-08 | session-8e300c | Fable 5 | max | 83 | 0 | 0.8 | 102 |
+| 2026-09 | session-6422bc | Fable 5.1 | max | 32 | 0 | 1.0 | 33 |
+| 2026-09 | session-ff0b8c | Fable 5.1 | xhigh | 31 | 1 | 1.1 | 29 |
+| 2026-09 | session-5abd4f | Fable 5.1 | max | 65 | 0 | 1.0 | 68 |
 
 The three Fable 5.1 sessions filled the window in 29 to 68 prompts. The seven earlier sessions
 took 55 to 142. This is the clearest single number behind the feeling that the window "fills
@@ -70,19 +70,19 @@ Maximum effort adds about 40% more per prompt than xhigh at the median and about
 
 Every compaction event in the corpus.
 
-| date | session | model | trigger | tokens before | tokens after | retained | duration | summary size |
+| month | session | model | trigger | tokens before | tokens after | retained | duration | summary size |
 |---|---|---|---|---|---|---|---|---|
-| 2026-07-24 | session-46f857 | Fable 5 | manual | 971,443 | 15,678 | 1.6% | 3.9 min | 29.8k chars |
-| 2026-08-08 | session-b7ac56 | Opus 5 | manual | 978,456 | 12,684 | 1.3% | 2.6 min | 23.8k chars |
-| 2026-08-19 | session-343cff | Opus 5 | manual | 963,993 | 12,784 | 1.3% | 2.7 min | 20.0k chars |
-| 2026-08-25 | session-46f857 | Opus 5 | auto | 804,863 | 110,735 | 13.8% | 4.3 min | 33.5k chars |
-| 2026-08-26 | session-b7e016 | Opus 5 | manual | 976,567 | 11,134 | 1.1% | 2.4 min | 17.2k chars |
-| 2026-08-26 | session-46f857 | Fable 5 | manual | 970,737 | 25,393 | 2.6% | 4.0 min | 25.0k chars |
-| 2026-08-26 | session-46f857 | Fable 5 | auto | 990,393 | 87,432 | 8.8% | 5.3 min | 32.9k chars |
-| 2026-08-28 | session-46f857 | Fable 5 | manual | 971,524 | 17,010 | 1.8% | 2.8 min | 27.4k chars |
-| 2026-08-29 | session-46f857 | Fable 5 | auto | 1,016,623 | 27,427 | 2.7% | 2.5 min | 21.9k chars |
-| 2026-09-04 | session-ff0b8c | Fable 5.1 | auto | 999,900 | 19,139 | 1.9% | 2.4 min | 21.9k chars |
-| 2026-09-06 | session-6a1ae1 | Fable 5 | auto | 970,399 | 25,007 | 2.6% | 2.5 min | 20.3k chars |
+| 2026-07 | session-46f857 | Fable 5 | manual | 971,443 | 15,678 | 1.6% | 3.9 min | 29.8k chars |
+| 2026-08 | session-b7ac56 | Opus 5 | manual | 978,456 | 12,684 | 1.3% | 2.6 min | 23.8k chars |
+| 2026-08 | session-343cff | Opus 5 | manual | 963,993 | 12,784 | 1.3% | 2.7 min | 20.0k chars |
+| 2026-08 | session-46f857 | Opus 5 | auto | 804,863 | 110,735 | 13.8% | 4.3 min | 33.5k chars |
+| 2026-08 | session-b7e016 | Opus 5 | manual | 976,567 | 11,134 | 1.1% | 2.4 min | 17.2k chars |
+| 2026-08 | session-46f857 | Fable 5 | manual | 970,737 | 25,393 | 2.6% | 4.0 min | 25.0k chars |
+| 2026-08 | session-46f857 | Fable 5 | auto | 990,393 | 87,432 | 8.8% | 5.3 min | 32.9k chars |
+| 2026-08 | session-46f857 | Fable 5 | manual | 971,524 | 17,010 | 1.8% | 2.8 min | 27.4k chars |
+| 2026-08 | session-46f857 | Fable 5 | auto | 1,016,623 | 27,427 | 2.7% | 2.5 min | 21.9k chars |
+| 2026-09 | session-ff0b8c | Fable 5.1 | auto | 999,900 | 19,139 | 1.9% | 2.4 min | 21.9k chars |
+| 2026-09 | session-6a1ae1 | Fable 5 | auto | 970,399 | 25,007 | 2.6% | 2.5 min | 20.3k chars |
 
 - All eleven fired between 0.80M and 1.02M tokens. Nobody compacts early.
 - Manual compactions kept 1.1% to 2.6% of the context. Automatic ones kept 1.9% to 13.8%; the two

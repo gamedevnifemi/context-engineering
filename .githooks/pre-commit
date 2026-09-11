@@ -1,5 +1,5 @@
 #!/bin/sh
-# Refuse to commit content that would publish personal detail or raw transcripts.
+# Repository content checks. See docs/privacy.md.
 root="$(git rev-parse --show-toplevel)"
 if command -v python >/dev/null 2>&1; then py=python; else py=python3; fi
 exec "$py" "$root/scripts/privacy_check.py" --staged

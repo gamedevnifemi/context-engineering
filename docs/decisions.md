@@ -49,6 +49,25 @@ Last-minus-first breaks when a compaction fires mid-turn. Summing only positive 
 consecutive calls, then adding the last call's output, gives a figure that stays meaningful and
 equals last-minus-first in the common case.
 
+## 2026-09-11: Scripts say what they are for, not what they guard
+
+Hook scripts and the content checker carry one-line headers that point at `docs/privacy.md`.
+Enumerating what the checks protect against, or where local configuration lives, belongs in one
+reviewed document rather than scattered through code that anyone can read in isolation.
+
+## 2026-09-11: Published output is coarser than local output
+
+Tables meant for publication show month-level dates and merge integration-specific tool names
+under one label. Exact timestamps and full tool names would let a reader correlate sessions with
+public activity or learn what is installed on the machine. Local CSVs keep the detail.
+
+## 2026-09-11: Checks also run in CI
+
+A GitHub Actions workflow runs the content checker over the whole tree on every push, without
+printing matched text. Hooks are per-clone configuration and are easy to forget after a fresh
+clone; the workflow is the backstop. Extra terms can be supplied as a repository secret, which is
+left to the owner to decide.
+
 ## 2026-09-11: Context limit is a constant
 
 The observed sessions ran against a one-million-token window. `CONTEXT_LIMIT` is a module
