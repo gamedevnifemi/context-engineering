@@ -43,10 +43,19 @@ the local configuration.
 
 ## What published output leaves out
 
-- Project and session identifiers: aliases only.
-- Dates: month resolution in tables meant for publication. Exact timestamps stay in the local CSVs.
+Two reports exist. The default one keeps per-session detail for local analysis and stays in
+`out/`. `ctxeng report --publish` produces the only kind of table that goes into `docs/`:
+
+- Aggregates and ranges only: no per-session or per-event rows, no session identifiers, even
+  pseudonymous ones. A row of per-session figures is a behavioural fingerprint whether or not it
+  carries a name.
+- Groups backed by fewer than three sessions are omitted, since they are single-session rows in
+  disguise.
+- Charts show at most two illustrative sessions, labelled by model alone, plus pooled figures.
 - Tool names from external integrations are collapsed to a single label, since they reveal what
   is installed on the machine.
+- Corpus descriptions in prose use approximate counts. Exact figures belong to the metrics, not
+  to the person's usage volume.
 - Anything that reads like a path, a name, or a project. Generation is not review: read every
   table and chart before committing it.
 

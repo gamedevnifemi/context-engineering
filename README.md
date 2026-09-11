@@ -90,19 +90,20 @@ Full write-up with tables: [docs/findings/2026-09-11-first-look.md](docs/finding
   the least. Each one took two and a half to five minutes.
 - **The first turn after a compaction costs about 2.3 times a normal turn.** The model spends it
   re-reading and re-discovering what the summary left out.
-- **Newer model, more context per prompt.** Per-prompt growth for the newest model is about 40%
+- **Newer model, more context per prompt.** Per-prompt growth for the newest model is about 45%
   higher at the median and three times higher at the 90th percentile than its predecessor, with
   roughly twice the tool calls per prompt. The sample is small and confounded, so this is a lead,
   not a verdict.
 - **Effort level matters.** Maximum effort adds about 40% more context per prompt than the next
   level down.
 - **The model's own tool calls are the biggest single source of context.** Tool inputs (file
-  writes, edits, commands) plus tool results account for half to nine tenths of what enters the
-  window. The fixed overhead at session start is 22k to 40k tokens and is not the problem.
-- **Token counts are not comparable across models.** All but one of the large context drops
-  that were not compactions coincided with a mid-session model switch, with the same context
-  measuring 20% to 45% smaller afterwards.
+  writes, edits, commands) are about 30% of what enters a typical long session, and tool results
+  come next. Together they are half to nine tenths of the window. The fixed overhead at session
+  start is 24k to 37k tokens and is not the problem.
+- **Token counts are not comparable across models.** Eight of the ten large context drops that
+  were not compactions coincided with a mid-session model switch, with the same context
+  measuring 16% to 45% smaller afterwards.
 
-![Context over a session](docs/findings/img/2026-09-11-context-curves.png)
+![Context over a session](docs/findings/img/2026-09-11-context-examples.png)
 
 ![What filled the context](docs/findings/img/2026-09-11-composition.png)

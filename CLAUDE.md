@@ -15,9 +15,10 @@ later, once the measurements say what to change.
   usernames, local paths, account identifiers, or the names of other local projects.
 - Transcripts (`*.jsonl`), the `out/` directory, and any unredacted derived data stay out of git.
   The toolkit reads transcripts in place and never copies them into this repo.
-- Anything published under `docs/` uses the pseudonyms produced by `ctxeng.redact`, month-level
-  dates, and generic labels for integration-specific tool names. Review every table and chart
-  before committing it.
+- Findings published under `docs/` come from `ctxeng report --publish` only: aggregates and
+  ranges, no per-session or per-event rows, no session identifiers (pseudonymous or not), charts
+  labelled by model rather than by session, approximate corpus counts in prose. The detailed
+  report stays in `out/`. Review every table and chart before committing it.
 - The `.githooks/` hooks run `scripts/privacy_check.py`. On a fresh clone, enable them with
   `git config core.hooksPath .githooks` before the first commit. Do not bypass or weaken them; if
   a check blocks a commit, fix the content.

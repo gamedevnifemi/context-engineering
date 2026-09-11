@@ -61,6 +61,14 @@ Tables meant for publication show month-level dates and merge integration-specif
 under one label. Exact timestamps and full tool names would let a reader correlate sessions with
 public activity or learn what is installed on the machine. Local CSVs keep the detail.
 
+## 2026-09-11: Published findings are aggregates, never per-session rows
+
+The first findings page listed sessions one per row under pseudonyms. Even without names, a row
+of prompt counts, compaction counts and token figures is a fingerprint of one person's work, and
+the aggregate says the same thing. `ctxeng report --publish` now produces distributions, ranges,
+and pooled figures only, omits groups backed by fewer than three sessions, and labels example
+charts by model. Per-session detail stays in the local report.
+
 ## 2026-09-11: Checks also run in CI
 
 A GitHub Actions workflow runs the content checker over the whole tree on every push, without

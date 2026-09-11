@@ -132,9 +132,14 @@ def cmd_baseline(args) -> None:
 
 
 def cmd_report(args) -> None:
-    from .report import build_report
-    path = build_report(_load(args), Path(args.out), charts=args.charts, top=args.top,
-                        min_calls=args.min_calls)
+    sessions = _load(args)
+    if args.publish:
+        from .publish import build_publish_report
+        out = Path("out/publish") if args.out == "out" else Path(args.out)
+        path = build_publish_report(sessions, out, charts=args.charts, top=args.top, min_calls=args.min_calls)
+    else:
+        from .report import build_report
+        path = build_report(sessions, Path(args.out), charts=args.charts, top=args.top, min_calls=args.min_calls)
     print(f"wrote {path}")
 
 
@@ -190,6 +195,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", default="out")
     p.add_argument("--charts", action="store_true")
     p.add_argument("--top", type=int, default=6, help="sessions to detail")
+    p.add_argument("--publish", action="store_true",
+                   help="aggregates and ranges only, no per-session rows (default out dir: out/publish)")
     common(p, raw=False, min_calls=5)
     p.set_defaults(fn=cmd_report)
     return ap
