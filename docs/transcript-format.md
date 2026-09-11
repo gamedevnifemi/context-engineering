@@ -3,6 +3,14 @@
 What Claude Code writes to disk, as far as this project relies on it. Field names were observed
 in transcripts from Claude Code 2.1.x releases; anything not listed here is ignored by the parser.
 
+The documentation states that the entry format is internal to Claude Code and changes between
+versions, and that scripts parsing the files directly can break on any release. This project
+parses them anyway because the per-call token usage and the compaction metadata exist nowhere
+else. The parser tolerates unknown record types and missing fields, and every finding names the
+release range it was produced from. The sanctioned alternatives, `/export` for a rendered
+transcript and the `transcript_path` field that `SessionEnd` hooks receive, do not carry the
+per-call figures this analysis needs.
+
 ## Where transcripts live
 
 ```
@@ -56,7 +64,7 @@ written as three assistant records with the same `requestId` and identical usage
 across records triples the numbers. The parser groups by `requestId` and counts once.
 
 Assistant records whose model is `<synthetic>` are local notices (errors, interruptions), not
-model output, and carry no usage.
+model output. Their usage fields are present but all zero.
 
 ## Prompts, tool results and machinery
 
@@ -88,8 +96,15 @@ compactMetadata.durationMs               how long the summarisation took
 compactMetadata.preservedSegment         which recent messages were carried over verbatim
 ```
 
-It is followed by the summary as a `user` record. The pre-compaction records stay in the file, so
-the whole history remains available for analysis.
+It is followed by the summary as a `user` record: a fixed opening sentence, then numbered
+sections covering the request and intent, key technical concepts, files and code, errors and
+fixes, pending tasks and current work. The pre-compaction records stay in the file, so the whole
+history remains available for analysis.
+
+Two related events leave no boundary record. Claude Code clears older tool outputs before it
+resorts to summarising; that shows only as a fall in the next call's context size. And a session
+forked with `/branch` or `--fork-session` starts its own file with the history copied in, so its
+first call already carries a large context.
 
 ## Attachments
 
@@ -97,7 +112,7 @@ Attachment records log context Claude Code injects around the conversation. Kind
 
 | kind | Content |
 |---|---|
-| `prompt_snapshot` | The system prompt, once per session |
+| `prompt_snapshot` | The system prompt, recorded when it is built or rebuilt; once per session in the common case |
 | `instructions` | Instruction files in effect (user and project `CLAUDE.md`), with their text |
 | `skill_listing` | The list of available skills and their descriptions |
 | `deferred_tools_delta`, `agent_listing_delta`, `mcp_instructions_delta` | Tool, agent and MCP listings as they change |

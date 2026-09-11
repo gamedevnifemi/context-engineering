@@ -1,21 +1,27 @@
 # Context Engineering
 
-Long Claude Code sessions fill their context window. When the window is full, Claude Code
-compacts: it summarises the conversation and continues in a fresh window that holds a small
-fraction of what was there. Work quality drops noticeably after that point.
+Long Claude Code sessions fill their context window. Near the limit, Claude Code compacts: it
+clears older tool outputs, summarises the conversation, and continues in a window that holds the
+summary, the last few exchanges, and a handful of files reloaded from disk. The session that
+continues from there is noticeably worse at the task it was in the middle of. It re-reads what
+it had read, repeats work, loses decisions, and drifts from where its predecessor was heading.
 
 This repository is the headquarters for understanding and then fixing that. It contains
 `ctxeng`, a small toolkit that reads Claude Code's own session transcripts in place and measures
-how context is consumed, what fills it, and what each compaction costs. Later phases will add
-interventions and measure them with the same instruments.
+what compaction discards, what the session after it has to do to recover, and what filled the
+window in the first place. Later phases will add interventions and measure them with the same
+instruments.
+
+It is not a benchmark of Claude models. The measurements come from one person's sessions and are
+about the mechanism, not about which model is better.
 
 Nothing here depends on one machine. Point it at any Claude Code installation and it works.
 
 ## Status
 
 Phase 1, diagnosis. The toolkit, its metrics, and a first set of findings are in place.
-Interventions (hooks, hand-off documents, prompt changes) are deliberately deferred until the
-measurements say what to change. See the [roadmap](docs/roadmap.md).
+Interventions are deliberately deferred until the measurements say what to change. See the
+[roadmap](docs/roadmap.md) and the [problem statement](docs/problem-statement.md).
 
 ## How it works
 
@@ -48,32 +54,47 @@ sequenceDiagram
         C->>C: run the tool, append its result
     end
     Note over C,M: the context grows on every call
-    C->>M: near the limit: summarise everything
+    C->>C: near the limit: clear old tool outputs
+    C->>M: summarise the conversation
     M-->>C: summary
-    Note over C: new window = summary + a few preserved messages
+    Note over C: new window = summary + recent exchanges<br/>+ up to five reloaded files + CLAUDE.md, memory and plan from disk
 ```
+
+The behaviour in that diagram is taken from Anthropic's documentation; the pages and the exact
+statements used are listed in [docs/references.md](docs/references.md).
 
 ## Quick start
 
 Requires Python 3.10 or newer. The core has no dependencies; charts need matplotlib.
 
 ```bash
-pip install -e .              # or: pip install -e ".[charts]"
+git clone <this repository>
+cd context-engineering
+pip install -e .              # or: pip install -e ".[charts]" to be able to draw charts
+ctxeng --help                 # confirms the install
 
 ctxeng scan                   # every session: model, effort, prompts, peak context, compactions
-ctxeng growth --by model      # how much the context grows per prompt, by model
-ctxeng growth --by effort     # the same, by effort level
 ctxeng compactions            # every compaction: tokens before and after, retained share
 ctxeng session <id-prefix>    # one session in detail
 ctxeng prompts <id-prefix>    # per-prompt cost inside one session
-ctxeng composition <id-prefix># what filled that session's context
-ctxeng baseline --by version  # context already present on the first call
+ctxeng composition <id-prefix>  # what filled that session's context
+ctxeng growth --by kind       # cost of turns that start from a compaction summary vs a prompt
+ctxeng growth --by model      # context added per prompt, by model (or --by effort)
+ctxeng baseline --by model    # context already present on the first call
 ctxeng report --charts        # writes out/report.md, CSVs, and PNG charts
+ctxeng report --publish       # aggregates only, safe to share; writes to out/publish/
 ```
 
-`python -m ctxeng ...` works without installing. Transcripts are found via `CLAUDE_CONFIG_DIR`
-or `~/.claude`; pass `--projects PATH` to point elsewhere. Project and session identifiers in
-the output are pseudonyms, so tables can be shared as they are; add `--raw` to see the real ones.
+The install step is what makes the `ctxeng` command available; it registers the package with
+your Python, and later edits to the source take effect without reinstalling. Transcripts are
+found via `CLAUDE_CONFIG_DIR` or `~/.claude`; pass `--projects PATH` to point elsewhere. Project
+and session identifiers in the output are pseudonyms, so tables can be shared as they are; add
+`--raw` to see the real ones.
+
+Two things to know. Claude Code deletes transcripts untouched for 30 days by default
+(`cleanupPeriodDays` in its settings), so raise that if you want history. And the transcript
+format is documented as internal and liable to change between releases; the parser is written
+defensively and counts what it does not understand, but it may need updating after an upgrade.
 
 Definitions of every metric are in [docs/metrics.md](docs/metrics.md), and notes on the
 transcript format in [docs/transcript-format.md](docs/transcript-format.md).
@@ -82,27 +103,27 @@ transcript format in [docs/transcript-format.md](docs/transcript-format.md).
 
 Full write-up with tables: [docs/findings/2026-09-11-first-look.md](docs/findings/2026-09-11-first-look.md).
 
-- **The newest model fills the window in a third of the prompts.** Sessions on Fable 5.1 filled
-  the one-million-token window in 29 to 68 user prompts. Sessions on Fable 5 and Opus 5 took 55
-  to 142.
-- **Sessions run all the way to the limit and then lose almost everything.** Every observed
-  compaction fired between 0.8M and 1.0M tokens and kept 1% to 14% of it. Manual compactions kept
-  the least. Each one took two and a half to five minutes.
-- **The first turn after a compaction costs about 2.3 times a normal turn.** The model spends it
-  re-reading and re-discovering what the summary left out.
-- **Newer model, more context per prompt.** Per-prompt growth for the newest model is about 45%
-  higher at the median and three times higher at the 90th percentile than its predecessor, with
-  roughly twice the tool calls per prompt. The sample is small and confounded, so this is a lead,
-  not a verdict.
-- **Effort level matters.** Maximum effort adds about 40% more context per prompt than the next
-  level down.
-- **The model's own tool calls are the biggest single source of context.** Tool inputs (file
-  writes, edits, commands) are about 30% of what enters a typical long session, and tool results
-  come next. Together they are half to nine tenths of the window. The fixed overhead at session
-  start is 24k to 37k tokens and is not the problem.
-- **Token counts are not comparable across models.** Eight of the ten large context drops that
-  were not compactions coincided with a mid-session model switch, with the same context
-  measuring 16% to 45% smaller afterwards.
+- **Sessions run all the way to the limit and then keep almost nothing.** Every observed
+  compaction fired between 0.8M and 1.02M tokens and retained 1% to 14% of the window. Manual
+  compactions retained the least. Each one took between two and a half and five and a half
+  minutes.
+- **The summary is small.** Four to eight thousand tokens. The rest of the new window is the
+  last few messages and what Claude Code reloads from disk.
+- **The first turn after a compaction costs about 2.3 times a normal turn**, with twice the tool
+  calls and three times the tool-result text: the model reading back what the summary left out.
+  Whether its later work then diverges is the next thing to measure.
+- **Most of what gets discarded was transient anyway.** Tool inputs and tool results are half to
+  nine tenths of what enters the window. The person's own words are about 2% and the assistant's
+  prose about 12%. The loss that matters is whatever part of that small residue the summary
+  missed, not the 86% to 99% of tokens thrown away.
+- **The fixed overhead is small and comes back for free.** The scaffolding restored from disk
+  after compaction is two to four percent of the window.
+- **How often it happens varies a lot.** In this corpus a working session met compaction every
+  29 to 142 prompts depending on model, effort and task. That figure is context for how often
+  the cost above is paid, nothing more.
+- **Token counts differ across models.** Eight of ten large context drops that were not
+  compactions coincided with a mid-session model switch, with the same context measuring 16% to
+  45% smaller afterwards.
 
 ![Context over a session](docs/findings/img/2026-09-11-context-examples.png)
 

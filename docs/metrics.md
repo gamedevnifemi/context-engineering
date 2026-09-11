@@ -15,11 +15,14 @@ Plotting this against call index gives the context curve: a sawtooth whose teeth
 
 ## Baseline context
 
-Context size on the very first call of a session. It measures what is in the window before any
-conversation: system prompt, instruction files, tool schemas, skill and agent listings. Grouped
-by Claude Code version it shows how the fixed overhead has moved over time. Sessions resumed from
-an earlier one start with history already present, which inflates their baseline; the 90th
-percentile is reported alongside the median for that reason.
+Context size on the very first call of a session. It approximates what is in the window before
+any conversation: system prompt, instruction files, tool schemas, skill and agent listings.
+Grouped by Claude Code version it shows how the fixed overhead has moved over time.
+
+The first call necessarily includes the first prompt, so a session that opens with a very large
+prompt (a pasted document, an automated brief) reports a high baseline. The median across
+sessions is representative because most first prompts are short; the 90th percentile is reported
+alongside it to make the exceptions visible.
 
 ## Prompt cost
 
@@ -50,9 +53,11 @@ window_fills     = compactions + context of the last call / CONTEXT_LIMIT
 prompts_per_fill = user prompts / window_fills        (only when window_fills >= 0.5)
 ```
 
-`CONTEXT_LIMIT` is 1,000,000 tokens, the window the observed sessions ran against. Sessions with
-a different limit need the constant changed. Prompts per fill is the most intuitive headline:
-how many things you can ask before the session compacts.
+`CONTEXT_LIMIT` is 1,000,000 tokens, the window the observed sessions ran against. Claude Code
+compacts a little before that, at about 967k tokens by default on such models, so a fill is
+slightly less than the constant; the difference is small enough to ignore for this purpose.
+Sessions with a different limit need the constant changed. Prompts per fill is the most intuitive
+headline: how many things you can ask before the session compacts.
 
 ## Composition
 
@@ -73,15 +78,16 @@ number that says how lossy the operation was.
 ## Context drops
 
 A fall of at least 10% in context size between consecutive calls with no compaction record
-between them. In the first corpus, all but one of the large drops coincided with a mid-session
-model switch, so different models evidently count the same context differently. The remaining
-drop, and the smaller ones, have candidate explanations that are not yet confirmed: Claude Code
-clearing old tool results, or a user rewinding to an earlier message.
+between them. Two documented causes exist: Claude Code clears older tool outputs before it
+summarises, and that clearing leaves no record in the transcript; and a mid-session model switch
+changes how the same context is counted. In the first corpus, eight of ten such drops coincided
+with a model switch and the other two are consistent with tool-output clearing. A user rewinding
+to an earlier message would also show as a drop.
 
 ## Caveats
 
-- **Token counts differ across models.** The same context can measure 25% to 35% differently
-  after a model switch. Compare growth rates within a model before comparing across them.
+- **Token counts differ across models.** The same context measured 16% to 45% smaller on the
+  call after a model switch. Compare growth rates within a model before comparing across them.
 - **Confounding.** Sessions differ in task, project, and how the person worked. Per-model and
   per-effort splits are observational, not controlled.
 - **Sample size.** A handful of long sessions dominate. The report prints counts next to every

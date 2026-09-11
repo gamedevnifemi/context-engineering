@@ -32,10 +32,10 @@ Stable across runs on one machine, so findings can refer to the same session ove
 irreversible for anyone reading a published report. Sequential aliases were rejected because
 they would change whenever a transcript was deleted.
 
-## 2026-09-11: Personal denylist lives outside the repository
+## 2026-09-11: The local terms file lives outside the repository
 
-A denylist inside the repo would itself publish the terms it is meant to hide. The scanner reads
-it from the user's home directory or an environment variable.
+A terms file inside the repo would itself publish what it is meant to keep out. The checker
+reads it from the user's home directory or an environment variable.
 
 ## 2026-09-11: Usage is counted once per request id
 
@@ -69,12 +69,37 @@ the aggregate says the same thing. `ctxeng report --publish` now produces distri
 and pooled figures only, omits groups backed by fewer than three sessions, and labels example
 charts by model. Per-session detail stays in the local report.
 
+## 2026-09-11: The checks stay minimal
+
+An earlier version of the content checker enumerated forbidden file types, listed images for
+manual review, and normalised text against invisible characters. Only the owner commits here, so
+the threat is an accident, not an adversary; the extra machinery caught nothing that a
+`.gitignore` entry and a read-through do not, and it advertised policy that does not need
+advertising. File-type exclusions live in `.gitignore`; the checker scans text against the
+tool's own redaction patterns and a local terms list, and nothing more.
+
 ## 2026-09-11: Checks also run in CI
 
 A GitHub Actions workflow runs the content checker over the whole tree on every push, without
 printing matched text. Hooks are per-clone configuration and are easy to forget after a fresh
 clone; the workflow is the backstop. Extra terms can be supplied as a repository secret, which is
 left to the owner to decide.
+
+## 2026-09-11: The subject is continuity across compaction, not model usage
+
+The first findings page led with comparisons between models and effort levels. Those figures
+come from one person's sessions and say nothing about the models as products; they matter only
+because fill rate sets how often compaction happens. The problem statement, findings and README
+now lead with what compaction discards and what the successor session does about it, and carry
+fill-rate figures as context with that caveat stated.
+
+## 2026-09-11: Statements about Claude Code behaviour cite the documentation
+
+Anything the repository says about how Claude Code compacts, what survives, which hooks exist,
+or how transcripts are stored is taken from the official documentation and recorded in
+`docs/references.md` with the page it came from. Where the documentation and a guess made
+earlier disagreed, the documentation won: tool outputs are cleared before summarising, which
+explains same-model context drops, and hooks exist for both sides of a compaction.
 
 ## 2026-09-11: Context limit is a constant
 

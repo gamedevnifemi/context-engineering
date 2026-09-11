@@ -5,9 +5,17 @@ file after any context compaction and before touching git.
 
 ## Purpose
 
-Diagnose how Claude Code sessions consume their context window and what compaction costs, then
-design and measure interventions. Phase 1 is diagnosis only. Hooks and other interventions come
-later, once the measurements say what to change.
+Understand what a Claude Code session loses when its context is compacted and what the session
+after it does differently, then design and measure interventions that preserve continuity.
+Phase 1 is diagnosis only. Hooks and other interventions come later, once the measurements say
+what to change.
+
+This is not a benchmark of models. Figures split by model or effort are context for how often
+compaction happens and must be presented that way, with the single-user caveat stated.
+
+Statements about how Claude Code behaves (compaction, what survives it, hooks, transcript
+storage) come from the official documentation and are recorded in `docs/references.md` with
+their source page. Do not state such behaviour from memory; check the page and add it there.
 
 ## Privacy (non-negotiable)
 

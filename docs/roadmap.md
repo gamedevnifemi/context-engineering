@@ -1,5 +1,8 @@
 # Roadmap
 
+The question throughout is continuity: what a session loses at compaction and what the session
+after it does differently. Every step below serves that question.
+
 ## Phase 1: diagnosis
 
 Done:
@@ -8,43 +11,53 @@ Done:
   attachment extraction, subagent summaries.
 - Metrics: context curve, baseline, prompt cost, window fills, composition, compaction rows,
   context drops.
-- CLI with pseudonymous output, Markdown and CSV report, optional charts.
-- Privacy scanner wired into git hooks, denylist outside the repo, standing rules in `CLAUDE.md`.
-- First findings on a real corpus.
+- CLI with pseudonymous output, Markdown and CSV report, optional charts, and an aggregate-only
+  publish variant for anything that leaves the machine.
+- Privacy scanner wired into git hooks and CI, local terms file, standing rules in `CLAUDE.md`.
+- First findings on a real corpus; statements about Claude Code behaviour checked against the
+  official documentation ([references.md](references.md)).
 
-Next, in rough order:
+Next, in order of how directly each one answers the continuity question:
 
-1. **Post-compaction quality proxies.** Within the first N turns after a compaction, count files
-   re-read that had been read before, commands re-run, tool errors, and user messages that read
-   as corrections. Compare with a matched window before the compaction.
-2. **Explain context drops.** Confirm that model switches account for all large drops, and
-   quantify the per-model difference in token counting on identical context.
-3. **Attribute growth to tools precisely.** Use per-call `cache_creation_input_tokens` as the
-   exact delta and assign it to the records between consecutive calls, replacing the
-   character-based composition estimate with token-accurate figures.
-4. **Injected context.** Measure how often listings and edited-file notices are re-injected and
-   what they cost per session.
-5. **Effort experiment.** Nearly all observed sessions ran at the two highest effort levels.
-   Run comparable work at lower levels to give H2 a fair test.
-6. **Subagent accounting.** Compare tokens spent inside subagents with what came back into the
-   main context, to see how much delegation actually saves.
+1. **Summary coverage.** For each compaction, compare the summary with the window it replaced:
+   which files, decisions, constraints and open items were present before and which appear in
+   the summary. The summary follows a documented structure (requests and intent, technical
+   concepts, files with snippets, errors and fixes, pending work), so coverage can be scored
+   section by section.
+2. **Successor behaviour.** In the turns after a compaction, count files re-read that had been
+   read before, commands re-run, tool errors, and user messages that read as corrections. Compare
+   with a matched window before the compaction. Then look for contradiction: decisions restated
+   differently, files recreated, approaches abandoned earlier being tried again.
+3. **Divergence experiment.** Run the same task to compaction under two conditions, with and
+   without a hand-off document, and compare what the successors do. This is the only way to
+   separate the summary's effect from the task's own difficulty.
+4. **Account for tool-output clearing.** The documentation says older tool outputs are cleared
+   before summarising and that this is separate from compaction. Identify those events in the
+   transcript so they are not mistaken for anything else.
+5. **Token-accurate composition.** Use per-call cache-creation tokens as the exact delta and
+   assign it to the records between consecutive calls, replacing the character-based estimate.
 
 ## Phase 2: interventions
 
-Each candidate is listed with the metric that would have to move for it to count as a success.
+Every lever below already exists in Claude Code. Each is listed with the metric from phase 1 that
+would have to move for it to count as a success.
 
-| Candidate | Mechanism | Success metric |
+| Lever | Mechanism (documented) | Success metric |
 |---|---|---|
-| Structured hand-off before compaction | A `PreCompact` hook writes a task-state file (goals, decisions, files touched, open items); a `SessionStart` hook re-injects it | Lower cost of the first turns after compaction; fewer re-reads |
-| Earlier, cheaper compaction | Compact at a lower threshold, or clear tool results progressively, so summaries are written from a less crowded window | Higher retained share of useful state; no rise in prompts per fill |
-| Tool-output hygiene | Trim or paginate large tool results; prefer targeted reads over whole files | Lower tool-result share in composition; more prompts per fill |
-| Write-through discipline | Keep decisions and progress in files the model can re-read, rather than only in conversation | Smaller drop in quality proxies after compaction |
-| Delegation policy | Push exploration and long-running work to subagents so only conclusions enter the main context | More prompts per fill at equal output |
-| Slimmer fixed context | Prune instruction files and listings | Lower baseline context |
-| Effort tuning | Use the highest effort only where it pays | Lower per-prompt growth at equal task outcomes |
+| Steer the summary | A "Compact instructions" section in project-root CLAUDE.md, or `/compact` with a focus | Higher summary coverage of decisions and open items |
+| Hand-off document | A `PreCompact` hook writes task state (goal, decisions, files touched, open items) to a file; a `SessionStart` hook with the `compact` matcher prints it, and Claude Code adds that output to the compacted context | Lower cost of the first turns after compaction; fewer re-reads; fewer contradictions |
+| Compact earlier | `/autocompact` with a lower token count, so the summary is written from a less crowded window | Higher coverage at equal or better prompts per fill |
+| Compact part of the conversation | `/rewind` with "Summarize up to here", keeping recent work verbatim | Fewer re-reads of files touched recently |
+| Keep state in files | Plan-mode plans and recently edited files are reloaded from disk after compaction, so decisions written to a plan or notes file survive | Smaller drop in successor behaviour metrics |
+| Keep transient traffic out | Delegate large reads and verbose commands to subagents; filter tool output with hooks | More prompts per fill, so compaction is met less often |
+| Slimmer injected context | Trim listings and reminders that recur during the session | Lower share of the window spent on machinery |
+
+The hand-off document is the most direct test of the working belief. If a good hand-off removes
+most of the post-compaction cost, the summary was the problem. If it does not, the problem lies
+elsewhere, for instance in the model's difficulty resuming any task from a brief.
 
 ## Phase 3: continuous measurement
 
 Run the report on a schedule, keep dated findings, and compare each intervention's before and
-after windows with the same instruments. Hooks only enter the picture here, once there is
-something worth automating and a way to tell whether it helped.
+after windows with the same instruments. Automation enters only here, once there is something
+worth automating and a way to tell whether it helped.
