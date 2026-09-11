@@ -14,15 +14,14 @@ Nothing here depends on one machine. Point it at any Claude Code installation an
 ## Status
 
 Phase 1, diagnosis. The toolkit, its metrics, and a first set of findings are in place.
-Interventions (hooks, handoff documents, prompt changes) are deliberately deferred until the
+Interventions (hooks, hand-off documents, prompt changes) are deliberately deferred until the
 measurements say what to change. See the [roadmap](docs/roadmap.md).
 
 ## How it works
 
 Claude Code writes one JSON Lines transcript per session. Every model call in it carries exact
 token usage, and every compaction leaves a metadata record. `ctxeng` reads those files where they
-already are, derives metrics, and replaces every identifier with a pseudonym before anything is
-printed or written.
+already are and derives metrics from them.
 
 ```mermaid
 flowchart LR
@@ -65,7 +64,7 @@ ctxeng scan                   # every session: model, effort, prompts, peak cont
 ctxeng growth --by model      # how much the context grows per prompt, by model
 ctxeng growth --by effort     # the same, by effort level
 ctxeng compactions            # every compaction: tokens before and after, retained share
-ctxeng session <id-prefix>    # one session in detail (add --raw locally for real ids)
+ctxeng session <id-prefix>    # one session in detail
 ctxeng prompts <id-prefix>    # per-prompt cost inside one session
 ctxeng composition <id-prefix># what filled that session's context
 ctxeng baseline --by version  # context already present on the first call
@@ -73,7 +72,11 @@ ctxeng report --charts        # writes out/report.md, CSVs, and PNG charts
 ```
 
 `python -m ctxeng ...` works without installing. Transcripts are found via `CLAUDE_CONFIG_DIR`
-or `~/.claude`; pass `--projects PATH` to point elsewhere. Tests: `python -m unittest`.
+or `~/.claude`; pass `--projects PATH` to point elsewhere. Project and session identifiers in
+the output are pseudonyms, so tables can be shared as they are; add `--raw` to see the real ones.
+
+Definitions of every metric are in [docs/metrics.md](docs/metrics.md), and notes on the
+transcript format in [docs/transcript-format.md](docs/transcript-format.md).
 
 ## What the first pass found
 
@@ -103,28 +106,3 @@ Full write-up with tables: [docs/findings/2026-09-11-first-look.md](docs/finding
 ![Context over a session](docs/findings/img/2026-09-11-context-curves.png)
 
 ![What filled the context](docs/findings/img/2026-09-11-composition.png)
-
-## Privacy
-
-Transcripts contain everything a person typed and every file the model read. This repository is
-public, so:
-
-- Transcripts are read in place and never copied into the repo. `*.jsonl` and `out/` are ignored.
-- Every project and session identifier in output is a salted hash. The salt lives outside the repo.
-- A pre-commit hook scans staged content for emails, home-directory paths, credentials, and a
-  denylist of personal terms kept outside the repo. Enable it with
-  `git config core.hooksPath .githooks`.
-
-Details in [docs/privacy.md](docs/privacy.md).
-
-## Repository layout
-
-| Path | Purpose |
-|---|---|
-| `src/ctxeng/` | The toolkit: locate, parse, metrics, redact, report, CLI |
-| `scripts/privacy_check.py` | Scanner used by the git hooks |
-| `.githooks/` | pre-commit and commit-msg hooks |
-| `tests/` | Unit tests on synthetic transcripts |
-| `docs/` | Problem statement, transcript format, metric definitions, privacy, decisions, roadmap |
-| `docs/findings/` | Dated analysis results and their charts |
-| `CLAUDE.md` | Standing rules for anyone (human or model) working in this repo |
