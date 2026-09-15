@@ -101,6 +101,26 @@ or how transcripts are stored is taken from the official documentation and recor
 earlier disagreed, the documentation won: tool outputs are cleared before summarising, which
 explains same-model context drops, and hooks exist for both sides of a compaction.
 
+## 2026-09-15: Housekeeping is deterministic first
+
+The audit that decides what is unused runs without a model: file inventory, command line tools,
+Claude Code's own counters, and transcripts. It is fast, free, and reproducible, and its rules are
+written down. A model is reserved for the one thing rules cannot do, judging whether content is
+stale, and that step will only ever propose edits for approval.
+
+## 2026-09-15: Applied changes are reversible and prefer settings over files
+
+Hiding a skill is a `skillOverrides` entry, not an edit to its file; denying a connector is a
+settings list entry; an unused agent is moved to an archive, never deleted. Every apply writes an
+undo record first. Plugin skills cannot be hidden individually, so the unit of change for a plugin
+is enable or disable.
+
+## 2026-09-15: Audit output stays local
+
+The audit names the machine's skills, plugins and connectors. Its report lives under `out/` and is
+never quoted in published documents; the housekeeping page describes the rules with invented
+examples only.
+
 ## 2026-09-11: Context limit is a constant
 
 The observed sessions ran against a one-million-token window. `CONTEXT_LIMIT` is a module

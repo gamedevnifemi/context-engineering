@@ -143,6 +143,22 @@ def cmd_report(args) -> None:
     print(f"wrote {path}")
 
 
+def cmd_audit(args) -> None:
+    from . import audit
+    if args.apply:
+        path = audit.apply_plan(Path(args.apply))
+        print(f"applied; undo record at {path}")
+        return
+    if args.undo:
+        n = audit.undo(Path(args.undo))
+        print(f"reversed {n} change(s)")
+        return
+    project = Path(args.project_dir).resolve() if args.project_dir else None
+    path = audit.run_audit(Path(args.out), window_days=args.window_days, project=project,
+                           projects=args.projects, network=not args.no_network)
+    print(f"wrote {path}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="ctxeng", description=__doc__)
     ap.add_argument("--projects", type=Path, default=None,
@@ -199,6 +215,15 @@ def build_parser() -> argparse.ArgumentParser:
                    help="aggregates and ranges only, no per-session rows (default out dir: out/publish)")
     common(p, raw=False, min_calls=5)
     p.set_defaults(fn=cmd_report)
+
+    p = sub.add_parser("audit", help="what loads into every session, what it costs, what is used; local only")
+    p.add_argument("--out", default="out/audit")
+    p.add_argument("--window-days", type=int, default=90, help="usage window (default 90)")
+    p.add_argument("--project-dir", help="also inventory this project's .claude directory and CLAUDE.md")
+    p.add_argument("--no-network", action="store_true", help="skip the plugin and MCP command line checks")
+    p.add_argument("--apply", metavar="PLAN", help="apply the reversible actions in a plan.json")
+    p.add_argument("--undo", metavar="APPLIED", help="reverse an applied plan from its applied.json")
+    p.set_defaults(fn=cmd_audit)
     return ap
 
 

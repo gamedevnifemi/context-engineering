@@ -37,6 +37,27 @@ Next, in order of how directly each one answers the continuity question:
 5. **Token-accurate composition.** Use per-call cache-creation tokens as the exact delta and
    assign it to the records between consecutive calls, replacing the character-based estimate.
 
+## Housekeeping track
+
+Runs alongside the phases above. It does not address the post-compaction drop directly; it keeps
+the always-loaded context down to what is used, so every compaction summary is written from a
+less crowded window and every re-injection is cheaper.
+
+Done:
+
+- `ctxeng audit`: inventory of skills, plugins, agents, connectors, instruction files and hooks
+  with per-session cost and usage; local report; plan of reversible actions.
+- `ctxeng audit --apply` and `--undo` with settings backup and file archive.
+- Weekly scheduling helper.
+
+Next:
+
+1. Restructure oversized skill bodies for progressive disclosure, largest first, and measure the
+   on-invoke cost before and after.
+2. A headless review step: hand the audit's notes and the flagged files to a read-only `claude -p`
+   run that proposes edits, for approval before anything changes.
+3. Track the startup baseline over time so the effect of each cleanup is visible.
+
 ## Phase 2: interventions
 
 Every lever below already exists in Claude Code. Each is listed with the metric from phase 1 that

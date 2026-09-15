@@ -83,6 +83,7 @@ ctxeng growth --by model      # context added per prompt, by model (or --by effo
 ctxeng baseline --by model    # context already present on the first call
 ctxeng report --charts        # writes out/report.md, CSVs, and PNG charts
 ctxeng report --publish       # aggregates only, safe to share; writes to out/publish/
+ctxeng audit                  # what loads into every session, what it costs, what is used
 ```
 
 The install step is what makes the `ctxeng` command available; it registers the package with
@@ -98,6 +99,16 @@ defensively and counts what it does not understand, but it may need updating aft
 
 Definitions of every metric are in [docs/metrics.md](docs/metrics.md), and notes on the
 transcript format in [docs/transcript-format.md](docs/transcript-format.md).
+
+## Housekeeping
+
+Skills, plugins, connectors and custom agents are listed to the model at every session start
+and again after every compaction. `ctxeng audit` inventories all of them, attaches the cost of
+each from the listings the transcripts record, attaches usage from tool calls and from Claude
+Code's own counters, and writes a local report with a plan of reversible changes: hide a skill
+from the listing, disable a plugin, deny a connector, archive an agent. `ctxeng audit --apply`
+carries the plan out with a backup; `--undo` reverses it. A helper schedules the audit weekly.
+Details and the rules are in [docs/housekeeping.md](docs/housekeeping.md).
 
 ## What the first pass found
 

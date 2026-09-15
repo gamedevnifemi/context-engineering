@@ -32,6 +32,8 @@ their source page. Do not state such behaviour from memory; check the page and a
   a check blocks a commit, fix the content.
 - The checks' local configuration lives outside the repository. Nothing from it is ever written
   into repository files, including this one and the documentation.
+- The housekeeping audit (`ctxeng audit`) describes this machine's skills, plugins and connectors.
+  Its output stays under `out/` and is never quoted in docs; examples in docs are invented.
 - Examples in docs and tests use invented paths, names, and identifiers.
 
 ## Commits
